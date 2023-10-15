@@ -146,7 +146,11 @@ export async function getCodeExamples({
   const examples = (
     await Promise.all(
       exampleBlocks.map((block) =>
-        getResultFromBlock(block, sourceFileSourceMap, transformExampleCode)
+        getResultFromBlock({
+          block,
+          sourceFileSourceMap,
+          transformer: transformExampleCode,
+        })
       )
     )
   ).filter((value): value is NonNullable<typeof value> => value != null);

@@ -2,11 +2,14 @@
   "name": "@waynevanson/doc-test-inline-core",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "scripts": {},
+  "scripts": {
+    "build": "tsc"
+  },
   "dependencies": {
     "@jridgewell/trace-mapping": "^0.3.19",
     "@microsoft/tsdoc": "^0.14.2",

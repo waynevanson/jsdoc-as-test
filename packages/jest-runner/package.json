@@ -1,0 +1,29 @@
+{
+  "name": "@waynevanson/jest-runner-doc-test-inline",
+  "scripts": {
+    "build": "tsc",
+    "test": "pnpm run build && jest"
+  },
+  "dependencies": {
+    "@waynevanson/doc-test-inline-core": "workspace:../core"
+  },
+  "devDependencies": {
+    "@jest/environment": "^29.7.0",
+    "@jest/test-result": "^29.7.0",
+    "@jest/transform": "^29.7.0",
+    "@jest/types": "29",
+    "@types/jest": "29",
+    "@types/node": "^20.8.5",
+    "jest": "^29",
+    "jest-runner": "^29.7.0",
+    "jest-runtime": "^29.7.0",
+    "ts-jest": "^29.1.1"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "runner": "<rootDir>/dist/index.js",
+    "testPathIgnorePatterns": [
+      "<rootDir>/dist/"
+    ]
+  }
+}

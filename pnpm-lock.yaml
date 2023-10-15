@@ -6,8 +6,6 @@ settings:
 
 importers:
 
-  .: {}
-
   packages/core:
     dependencies:
       '@jridgewell/trace-mapping':
@@ -31,10 +29,47 @@ importers:
         version: 29.7.0(@types/node@20.8.5)
       ts-jest:
         specifier: ^29.1.1
-        version: 29.1.1(@babel/core@7.23.2)(jest@29.7.0)(typescript@5.0.4)
+        version: 29.1.1(@babel/core@7.23.2)(@jest/types@29.6.3)(jest@29.7.0)(typescript@5.0.4)
       typescript:
         specifier: ~5.0.4
         version: 5.0.4
+
+  packages/jest-runner:
+    dependencies:
+      '@waynevanson/doc-test-inline-core':
+        specifier: workspace:../core
+        version: link:../core
+    devDependencies:
+      '@jest/environment':
+        specifier: ^29.7.0
+        version: 29.7.0
+      '@jest/test-result':
+        specifier: ^29.7.0
+        version: 29.7.0
+      '@jest/transform':
+        specifier: ^29.7.0
+        version: 29.7.0
+      '@jest/types':
+        specifier: '29'
+        version: 29.6.3
+      '@types/jest':
+        specifier: '29'
+        version: 29.5.5
+      '@types/node':
+        specifier: ^20.8.5
+        version: 20.8.5
+      jest:
+        specifier: ^29
+        version: 29.7.0(@types/node@20.8.5)
+      jest-runner:
+        specifier: ^29.7.0
+        version: 29.7.0
+      jest-runtime:
+        specifier: ^29.7.0
+        version: 29.7.0
+      ts-jest:
+        specifier: ^29.1.1
+        version: 29.1.1(@babel/core@7.23.2)(@jest/types@29.6.3)(jest@29.7.0)(typescript@5.0.4)
 
 packages:
 
@@ -2189,7 +2224,7 @@ packages:
       is-number: 7.0.0
     dev: true
 
-  /ts-jest@29.1.1(@babel/core@7.23.2)(jest@29.7.0)(typescript@5.0.4):
+  /ts-jest@29.1.1(@babel/core@7.23.2)(@jest/types@29.6.3)(jest@29.7.0)(typescript@5.0.4):
     resolution: {integrity: sha512-D6xjnnbP17cC85nliwGiL+tpoKN0StpgE0TeOjXQTU6MVCfsB4v7aW05CgQ/1OywGb0x/oy9hHFnN+sczTiRaA==}
     engines: {node: ^14.15.0 || ^16.10.0 || >=18.0.0}
     hasBin: true
@@ -2211,6 +2246,7 @@ packages:
         optional: true
     dependencies:
       '@babel/core': 7.23.2
+      '@jest/types': 29.6.3
       bs-logger: 0.2.6
       fast-json-stable-stringify: 2.1.0
       jest: 29.7.0(@types/node@20.8.5)
