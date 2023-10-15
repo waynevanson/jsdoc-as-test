@@ -1,18 +1,19 @@
 import * as tsdoc from "@microsoft/tsdoc";
 import type { EncodedSourceMap } from "@jridgewell/trace-mapping";
+import {} from "@jridgewell/trace-mapping";
+
+import {} from "source-map";
 
 // `babel` and `@jridgewell/trace-mapping` disagrees - `number` vs `3`
 export interface FixedRawSourceMap extends Omit<EncodedSourceMap, "version"> {
   version: number;
 }
 
-export type SourceMapLike = FixedRawSourceMap | string;
-
 export interface OutputExample {
   title: string | undefined;
   extension: string | undefined;
   code: string;
-  map: SourceMapLike | undefined;
+  map: FixedRawSourceMap | undefined;
 }
 
 export interface Output {
@@ -21,12 +22,12 @@ export interface Output {
 
 export type Transformer = (input: string) => Promise<{
   output: string;
-  map: SourceMapLike | undefined;
+  map: FixedRawSourceMap | undefined;
 }>;
 
 export interface Input {
-  sourceFileName: string;
   sourceFileContents: string;
+  sourceFileSourceMap?: FixedRawSourceMap;
   transformExampleCode?: Transformer;
 }
 
@@ -65,50 +66,94 @@ function getCodeFromNodes(nodes: ReadonlyArray<tsdoc.DocNode>) {
   return { extension, code };
 }
 
-// how to get the source map for this? I think I need to use something like the tscompiler
-// to get that information.
-const getComments = (content: string) =>
-  Array.from(content.matchAll(/\/\*\*.*?\*\//gms)).flatMap((a) =>
-    Array.from(a.values())
+const REGEXP_JSDOC = /\/\*\*.*?\*\//gs;
+const REGEXP_CODE_BLOCK = /(?<=```\w*\n).*?\n(?=\s*\*\s*```)/dgs;
+const REGEXP_COMMENT_START = /^\s*\*\s?/dg;
+
+// regex not working not sure why...
+function getOffsetsFromCode(jsdoc: string) {
+  const codeBlocks = Array.from(jsdoc.matchAll(REGEXP_CODE_BLOCK));
+  const comm = codeBlocks.map((codeBlock) =>
+    codeBlock[0]
+      .split(/\n/)
+      .flatMap((line) => Array.from(line.matchAll(REGEXP_COMMENT_START)))
+      .map((match) => ({
+        end: match?.indices?.[0][1],
+      }))
   );
 
-async function getResultFromBlock(
-  block: tsdoc.DocBlock,
-  sourceFileName: string,
-  transformer: Transformer | undefined
-): Promise<OutputExample> {
+  return comm;
+}
+
+const getComments = (content: string) => {
+  const matches = Array.from(content.matchAll(REGEXP_JSDOC));
+  const res = matches.map((match) => ({
+    value: match[0],
+    start: match.index,
+  }));
+
+  return res;
+};
+
+// source maps are going to be the hardest part of this package.
+async function getResultFromBlock({
+  block,
+  sourceFileSourceMap,
+  transformer,
+}: {
+  block: tsdoc.DocBlock;
+  sourceFileSourceMap: FixedRawSourceMap | undefined;
+  transformer: Transformer | undefined;
+}): Promise<OutputExample | null> {
   const nodes = block.content.nodes;
   const title = getTitleFromNodes(nodes);
   const { extension, code: precompiled } = getCodeFromNodes(nodes);
 
-  //@ts-expect-error - handle undefined with warnings or errors
-  const { output, map } = (await transformer?.(precompiled)) ?? {
-    output: precompiled,
-    map: undefined,
-  };
+  if (precompiled == null) return null;
 
-  //@ts-expect-error - handle undefined with warnings or errors
-  return { title, extension, map, code: output };
+  const { output = precompiled, map = undefined } =
+    (await transformer?.(precompiled)) ?? {};
+
+  if (map != null && sourceFileSourceMap != null) {
+    // turn `map` into a source map we can understand
+    // translate the line (3) and column (4) in the sourcemap with the comments.
+  }
+
+  return {
+    title,
+    extension,
+    map,
+    code: output,
+  };
 }
 
-export async function main({
-  sourceFileName,
+export async function getCodeExamples({
   sourceFileContents,
+  sourceFileSourceMap,
   transformExampleCode,
 }: Input): Promise<Output> {
   const parser = new tsdoc.TSDocParser();
   const comments = getComments(sourceFileContents);
-  const contexts = comments.flatMap((comment) => parser.parseString(comment));
+  const contexts = comments.flatMap((comment) =>
+    parser.parseString(comment.value)
+  );
+  const ranges = comments.map((code) => getOffsetsFromCode(code.value));
 
   const exampleBlocks = contexts
     .flatMap((context) => context.docComment.customBlocks)
     .filter((block) => block.blockTag.tagName === "@example");
 
-  const examples = await Promise.all(
-    exampleBlocks.map((block) =>
-      getResultFromBlock(block, sourceFileName, transformExampleCode)
+  const examples = (
+    await Promise.all(
+      exampleBlocks.map((block) =>
+        getResultFromBlock(block, sourceFileSourceMap, transformExampleCode)
+      )
     )
-  );
+  ).filter((value): value is NonNullable<typeof value> => value != null);
 
   return { examples };
 }
+
+// find the valid example block
+// if there is no space between the `*` and the code, -1 gap.
+//
